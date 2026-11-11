@@ -1,0 +1,55 @@
+app = "twenty-trap"
+primary_region = "fra"
+kill_signal = "SIGTERM"
+kill_timeout = "120s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[processes]
+  server = "node dist/main"
+  worker = "worker"
+
+[env]
+  NODE_PORT = "3000"
+  SERVER_URL = "https://crm.trapstudio.it"
+  IS_MULTIWORKSPACE_ENABLED = "false"
+  STORAGE_TYPE = "S_3"
+  STORAGE_S3_REGION = "auto"
+  STORAGE_S3_NAME = "twenty-trap-files"
+  STORAGE_S3_ENDPOINT = "https://t3.storage.dev"
+
+[deploy]
+  strategy = "rolling"
+  max_unavailable = 1
+  wait_timeout = "45m"
+
+[http_service]
+  processes = ["server"]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 50
+    hard_limit = 100
+
+  [[http_service.checks]]
+    grace_period = "60s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/healthz"
+
+[[vm]]
+  processes = ["server"]
+  size = "shared-cpu-1x"
+  memory = "2gb"
+
+[[vm]]
+  processes = ["worker"]
+  size = "shared-cpu-1x"
+  memory = "1gb"
